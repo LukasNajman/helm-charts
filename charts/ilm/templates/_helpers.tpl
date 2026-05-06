@@ -61,6 +61,23 @@ Create the name of the service account to use
 {{- end }}
 {{- end }}
 
+{{/*
+Resolve the effective Core workload type, applying the default once.
+Consumed by core-deployment.yaml and NOTES.txt so the default lives in a single place.
+*/}}
+{{- define "ilm.workloadType" -}}
+{{- .Values.workloadType | default "Deployment" -}}
+{{- end -}}
+
+{{/*
+Whether Core is configured for multiple replicas (effective replicaCount > 1).
+Returns "true" or "". Consumed by core-deployment.yaml and NOTES.txt so the rule lives in one place.
+*/}}
+{{- define "ilm.core.multiReplica" -}}
+{{- $replicaCount := pluck "replicaCount" .Values.global .Values | compact | first -}}
+{{- if gt (int $replicaCount) 1 -}}true{{- end -}}
+{{- end -}}
+
 {{- define "ilm.registerConnectors" -}}
 {{- if .Values.commonCredentialProvider.enabled }}
 registerConnectors: true

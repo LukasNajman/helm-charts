@@ -36,4 +36,30 @@
   Import the certificate to your browser!
 {{- end }}
 
+{{- $workloadType := include "ilm.workloadType" . }}
+{{- $multiReplica := eq (include "ilm.core.multiReplica" .) "true" }}
+{{- if and (eq $workloadType "Deployment") $multiReplica }}
+
+!! WARNING: Core is running more than one replica, but not safely
+
+   You have set replicaCount > 1, and Core is running as a Deployment
+   (workloadType: "Deployment"). This combination is unsafe.
+
+   Each Core replica needs its own unique instance id. A Deployment treats its
+   replicas as interchangeable and gives them no stable identity, so it cannot
+   assign unique ids. A StatefulSet does give each replica a stable identity, so
+   it can. Because Core is a Deployment here, each replica instead derives an id
+   from its pod IP, and two replicas can end up with the SAME id.
+
+   When that happens, different replicas can produce duplicate certificate serial
+   numbers, which is not allowed and can break trust in timestamps Core issues.
+
+   To run more than one replica safely, choose one of:
+     * set `workloadType: "StatefulSet"` so Kubernetes runs Core as a StatefulSet
+       instead of a Deployment — each replica then gets a stable, unique id (recommended), or
+     * reduce to a single replica (replicaCount: 1), optionally pinning its id with `platformInstanceId`.
+
+   Until you do, Core starts with a warning in its log and uses the pod-IP-derived id.
+{{- end }}
+
 DO NOT FORGET TO SAVE YOUR CONFIGURATION, YOU WILL NEED IT!
