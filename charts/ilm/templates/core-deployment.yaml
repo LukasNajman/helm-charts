@@ -1,4 +1,4 @@
-{{- $replicaCount := pluck "replicaCount" .Values.global .Values | compact | first }}
+{{- $replicaCount := include "ilm.core.effectiveReplicaCount" . }}
 {{- $username := pluck "username" .Values.global.admin .Values.registerAdmin.admin | compact | first | quote }}
 {{- $name := pluck "name" .Values.global.admin .Values.registerAdmin.admin | compact | first | quote }}
 {{- $surname := pluck "surname" .Values.global.admin .Values.registerAdmin.admin | compact | first | quote }}
@@ -18,6 +18,7 @@
 {{- $messagingHost = pluck "host" .Values.global.messaging.external .Values.messaging.external | compact | first }}
 {{- $messagingAmqpPort = pluck "port" .Values.global.messaging.external.amqp .Values.messaging.external.amqp | compact | first }}
 {{- end }}
+{{- include "ilm.core.validateAutoscaling" . }}
 {{- $workloadType := include "ilm.workloadType" . }}
 {{- if not (or (eq $workloadType "Deployment") (eq $workloadType "StatefulSet")) }}
 {{- fail (printf "workloadType must be either \"Deployment\" or \"StatefulSet\", got: %s" $workloadType) }}
@@ -33,7 +34,7 @@
 {{- end }}
 {{- $multiReplica := eq (include "ilm.core.multiReplica" .) "true" }}
 {{- if and $platformInstanceIdSet $multiReplica }}
-{{- fail "platformInstanceId is set together with multiple replicas (replicaCount > 1). An explicit id is a single value shared by every replica, so all Core replicas would emit IDENTICAL certificate serial numbers. For multi-replica signing use workloadType: \"StatefulSet\" and LEAVE platformInstanceId UNSET so each replica derives a unique id from its pod ordinal; set platformInstanceId only for a single-replica workload." }}
+{{- fail "platformInstanceId is set together with multiple replicas (replicaCount > 1 or autoscaling.enabled with maxReplicas > 1). An explicit id is a single value shared by every replica, so all Core replicas would emit IDENTICAL certificate serial numbers. For multi-replica signing use workloadType: \"StatefulSet\" and LEAVE platformInstanceId UNSET so each replica derives a unique id from its pod ordinal; set platformInstanceId only for a single-replica workload." }}
 {{- end }}
 apiVersion: apps/v1
 kind: {{ $workloadType }}
